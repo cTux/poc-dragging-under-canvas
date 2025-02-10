@@ -44,7 +44,7 @@
     "@mui/styled-engine": "npm:@mui/styled-engine-sc@^6.0.1"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.5.0",
+    "@commitlint/cli": "^19.7.1",
     "@commitlint/config-conventional": "^19.5.0",
     "@julr/vite-plugin-validate-env": "^1.1.1",
     "@playwright/test": "^1.48.2",
