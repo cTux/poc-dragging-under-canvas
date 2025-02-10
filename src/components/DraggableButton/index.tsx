@@ -15,19 +15,19 @@ export function DraggableButton({
   // For demonstration, use a fixed 45° rotation (in radians).
   const [rotation] = useState(Math.PI / 4);
   const [isDragging, setIsDragging] = useState(false);
-  // Two refs: one for the container (which is absolutely positioned) and one for the button.
+  // Refs for the container and the button.
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
   const offsetRef = useRef({ x: 0, y: 0 });
+  // Record the anchor corner ("top-left", "top-right", "bottom-left", "bottom-right")
+  const anchorRef = useRef('top-left');
 
-  // Computes the component’s cutout data.
+  // Returns the component’s cutout data (used by the overlay).
+  // (The cutout is based on the untransformed button dimensions and the container’s center.)
   const getButtonRect = () => {
-    // Get the container's absolute position.
     const containerRect = containerRef.current.getBoundingClientRect();
-    // Use the button’s offset dimensions (which are not affected by CSS transforms).
     const width = buttonRef.current.offsetWidth;
     const height = buttonRef.current.offsetHeight;
-    // The center of the button.
     const centerX = containerRect.left + width / 2;
     const centerY = containerRect.top + height / 2;
     return {
@@ -44,10 +44,16 @@ export function DraggableButton({
     e.preventDefault();
     setIsDragging(true);
     const containerRect = containerRef.current.getBoundingClientRect();
+    const width = buttonRef.current.offsetWidth;
+    const height = buttonRef.current.offsetHeight;
     offsetRef.current = {
       x: e.clientX - containerRect.left,
       y: e.clientY - containerRect.top,
     };
+    // Determine which corner was grabbed based on the offset within the container.
+    const horizontalAnchor = offsetRef.current.x < width / 2 ? 'left' : 'right';
+    const verticalAnchor = offsetRef.current.y < height / 2 ? 'top' : 'bottom';
+    anchorRef.current = `${verticalAnchor}-${horizontalAnchor}`; // e.g., "top-left"
     if (onDragStart) onDragStart(getButtonRect());
   };
 
@@ -61,17 +67,72 @@ export function DraggableButton({
 
   const handleMouseUp = () => {
     if (!isDragging) return;
-    setIsDragging(false);
-    // Snap the rotated component’s center to the grid.
+    // Get the current container position and dimensions.
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const width = buttonRef.current.offsetWidth;
+    const height = buttonRef.current.offsetHeight;
+    const currentPos = { x: containerRect.left, y: containerRect.top };
+    // Compute the center of the component.
+    const centerX = containerRect.left + width / 2;
+    const centerY = containerRect.top + height / 2;
+    const angle = rotation;
+    // Compute the rotated corner coordinates.
+    // For a rectangle rotated about its center, each corner is computed by:
+    // rotated_offset = (dx*cos(angle) - dy*sin(angle), dx*sin(angle) + dy*cos(angle))
+    // where (dx, dy) is the vector from the center to the corner.
+    const halfW = width / 2;
+    const halfH = height / 2;
+    const topLeft = {
+      x: centerX + (-halfW * Math.cos(angle) - -halfH * Math.sin(angle)),
+      y: centerY + (-halfW * Math.sin(angle) + -halfH * Math.cos(angle)),
+    };
+    const topRight = {
+      x: centerX + (halfW * Math.cos(angle) - -halfH * Math.sin(angle)),
+      y: centerY + (halfW * Math.sin(angle) + -halfH * Math.cos(angle)),
+    };
+    const bottomLeft = {
+      x: centerX + (-halfW * Math.cos(angle) - halfH * Math.sin(angle)),
+      y: centerY + (-halfW * Math.sin(angle) + halfH * Math.cos(angle)),
+    };
+    const bottomRight = {
+      x: centerX + (halfW * Math.cos(angle) - halfH * Math.sin(angle)),
+      y: centerY + (halfW * Math.sin(angle) + halfH * Math.cos(angle)),
+    };
+
+    // Select the current anchor corner based on where the user grabbed.
+    let currentAnchor;
+    switch (anchorRef.current) {
+      case 'top-left':
+        currentAnchor = topLeft;
+        break;
+      case 'top-right':
+        currentAnchor = topRight;
+        break;
+      case 'bottom-left':
+        currentAnchor = bottomLeft;
+        break;
+      case 'bottom-right':
+        currentAnchor = bottomRight;
+        break;
+      default:
+        currentAnchor = topLeft;
+    }
+
+    // Snap the chosen anchor corner to the grid.
     const gridSize = 20;
-    const rect = getButtonRect();
-    const snappedCenterX = Math.round(rect.centerX / gridSize) * gridSize;
-    const snappedCenterY = Math.round(rect.centerY / gridSize) * gridSize;
-    // Adjust container position so that the button’s center is snapped.
-    const newX = snappedCenterX - rect.width / 2;
-    const newY = snappedCenterY - rect.height / 2;
-    setPosition({ x: newX, y: newY });
+    const snappedAnchor = {
+      x: Math.round(currentAnchor.x / gridSize) * gridSize,
+      y: Math.round(currentAnchor.y / gridSize) * gridSize,
+    };
+
+    // Compute the delta between the snapped anchor and its current position.
+    const deltaX = snappedAnchor.x - currentAnchor.x;
+    const deltaY = snappedAnchor.y - currentAnchor.y;
+    // Update the container's top-left position by adding this delta.
+    const newPos = { x: currentPos.x + deltaX, y: currentPos.y + deltaY };
+    setPosition(newPos);
     if (onDragEnd) onDragEnd(getButtonRect());
+    setIsDragging(false);
   };
 
   useEffect(() => {
@@ -105,7 +166,7 @@ export function DraggableButton({
         style={{
           borderRadius: '20px',
           padding: '10px 20px',
-          // Rotate about the center.
+          // Rotate the button about its center.
           transform: `rotate(${rotation}rad)`,
           transformOrigin: 'center center',
         }}

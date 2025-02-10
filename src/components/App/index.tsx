@@ -10,7 +10,7 @@ export const App = () => {
   const [cutout, setCutout] = useState(null);
   const gridSpacing = 20;
 
-  // Compute snap coordinates from the rotated component’s center.
+  // For red snapping guidelines, we snap the component’s center.
   const snapCoords = cutout
     ? {
         x: Math.round(cutout.centerX / gridSpacing) * gridSpacing,

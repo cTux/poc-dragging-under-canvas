@@ -5,5 +5,5 @@ export const AppContainer = styled(Box)`
   width: 100%;
   height: 100%;
   user-select: none;
-  background-color: rgba(0, 255, 255, 0.4);
+  background-color: rgba(118, 255, 255, 1);
 `;
