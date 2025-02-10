@@ -1,5 +1,15 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 
+/**
+ * Props:
+ * - isDragging: Boolean; when true, snapping guidelines are rendered.
+ * - gridSpacing: The spacing (in pixels) for grid lines.
+ * - cutout: An object with properties:
+ *      { centerX, centerY, width, height, borderRadius, angle }
+ *   representing the rotated component’s center, its untransformed dimensions,
+ *   and its rotation (in radians).
+ * - snapCoords: An object { x, y } for the snapped center (used to draw guidelines).
+ */
 export function GridCanvas({
   isDragging,
   gridSpacing = 20,
@@ -11,7 +21,7 @@ export function GridCanvas({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // Ensure the canvas covers the entire window.
+    // Make the canvas cover the entire viewport.
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     const ctx = canvas.getContext('2d');
@@ -20,7 +30,7 @@ export function GridCanvas({
     // Clear the canvas.
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // ─── DRAW GRID LINES ──────────────────────────────────────
+    // ─── DRAW GRID LINES ─────────────────────────────
     ctx.strokeStyle = 'rgba(0,0,0,0.2)';
     ctx.lineWidth = 1;
     for (let x = 0; x < canvas.width; x += gridSpacing) {
@@ -36,17 +46,23 @@ export function GridCanvas({
       ctx.stroke();
     }
 
-    // ─── ERASE THE BUTTON AREA (ROTATED CUTOUT) ──────────────
+    // ─── ERASE THE COMPONENT AREA (USING ROTATED CUTOUT) ─────────────────────
     if (cutout) {
+      const {
+        centerX,
+        centerY,
+        width,
+        height,
+        borderRadius = 0,
+        angle,
+      } = cutout;
       ctx.save();
-      // Use destination-out to “cut out” the area.
+      // Use destination-out to remove the pixels.
       ctx.globalCompositeOperation = 'destination-out';
       ctx.fillStyle = 'black';
-      const { x, y, width, height, borderRadius = 0, angle = 0 } = cutout;
-      // Translate to the center of the cutout (i.e. center of the component).
-      const centerX = x + width / 2;
-      const centerY = y + height / 2;
+      // Translate to the component’s center.
       ctx.translate(centerX, centerY);
+      // Rotate to match the component’s rotation.
       ctx.rotate(angle);
       ctx.beginPath();
       if (borderRadius) {
@@ -63,7 +79,7 @@ export function GridCanvas({
         ctx.lineTo(-w / 2, -h / 2 + r);
         ctx.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + r, -h / 2);
       } else {
-        // Draw a simple rectangle.
+        // Draw a simple rectangle centered at (0,0).
         ctx.rect(-width / 2, -height / 2, width, height);
       }
       ctx.closePath();
@@ -71,10 +87,10 @@ export function GridCanvas({
       ctx.restore();
     }
 
-    // Restore to the default composite operation.
+    // Restore composite operation.
     ctx.globalCompositeOperation = 'source-over';
 
-    // ─── DRAW SNAPPING GUIDELINES (ONLY WHILE DRAGGING) ───────
+    // ─── DRAW SNAPPING GUIDELINES (ONLY WHILE DRAGGING) ─────────────
     if (isDragging && snapCoords) {
       const { x, y } = snapCoords;
       ctx.save();
@@ -93,14 +109,23 @@ export function GridCanvas({
       ctx.restore();
     }
 
-    // ─── DRAW BOUNDING RECTANGLE (ALWAYS VISIBLE) ──────────────
+    // ─── DRAW THE DASHED, AXIS-ALIGNED BOUNDING RECTANGLE ─────────────
+    // This rectangle is the minimal AABB that encloses the rotated component.
     if (cutout) {
+      const { centerX, centerY, width, height, angle } = cutout;
+      // Compute the AABB dimensions.
+      const cosTheta = Math.abs(Math.cos(angle));
+      const sinTheta = Math.abs(Math.sin(angle));
+      const boundingWidth = width * cosTheta + height * sinTheta;
+      const boundingHeight = width * sinTheta + height * cosTheta;
+      // The top-left coordinate of the AABB.
+      const topLeftX = centerX - boundingWidth / 2;
+      const topLeftY = centerY - boundingHeight / 2;
       ctx.save();
-      ctx.strokeStyle = 'rgba(0, 0, 255, 0.5)'; // Blue color.
+      ctx.strokeStyle = 'rgba(0, 0, 255, 0.5)'; // Blue dashed rectangle.
       ctx.lineWidth = 2;
       ctx.setLineDash([5, 5]);
-      // Use the axis-aligned bounding rectangle from cutout.
-      ctx.strokeRect(cutout.x, cutout.y, cutout.width, cutout.height);
+      ctx.strokeRect(topLeftX, topLeftY, boundingWidth, boundingHeight);
       ctx.restore();
     }
   }, [isDragging, gridSpacing, cutout, snapCoords]);
@@ -112,8 +137,8 @@ export function GridCanvas({
         position: 'fixed',
         top: 0,
         left: 0,
-        pointerEvents: 'none', // Allow mouse events to pass through.
-        zIndex: 1000, // Ensures the canvas stays on top.
+        pointerEvents: 'none', // Let events pass through.
+        zIndex: 1000, // Keep the canvas on top.
       }}
     />
   );
