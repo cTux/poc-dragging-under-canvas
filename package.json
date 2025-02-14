@@ -5,8 +5,8 @@
   "license": "MIT",
   "type": "module",
   "engines": {
-    "node": "^22",
-    "pnpm": "^10"
+    "node": "^23",
+    "pnpm": "^9"
   },
   "scripts": {
     "build": "pnpm build:bundle && pnpm build:storybook",
@@ -126,5 +126,6 @@
       "cookie@<0.7.0": ">=0.7.0",
       "happy-dom@<15.10.2": ">=15.10.2"
     }
-  }
+  },
+  "packageManager": "pnpm@9.14.4+sha512.c8180b3fbe4e4bca02c94234717896b5529740a6cbadf19fa78254270403ea2f27d4e1d46a08a0f56c89b63dc8ebfd3ee53326da720273794e6200fcf0d184ab"
 }

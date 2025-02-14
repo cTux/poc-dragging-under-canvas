@@ -1,24 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export function DraggableButton({
+export function DraggableSvg({
   onDragStart,
   onDrag,
   onDragEnd,
-  initialPosition = { x: 100, y: 100 },
+  initialPosition = { x: 200, y: 200 },
 }) {
   const [position, setPosition] = useState(initialPosition);
   // Fixed 45° rotation (in radians)
   const [rotation] = useState(Math.PI / 4);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
-  const buttonRef = useRef(null);
+  const svgRef = useRef(null);
   const offsetRef = useRef({ x: 0, y: 0 });
 
-  // Return cutout data: center position, dimensions, rotation, and shape type.
-  const getButtonRect = () => {
+  // Return cutout data for the SVG using clientWidth/clientHeight.
+  const getSvgRect = () => {
     const containerRect = containerRef.current.getBoundingClientRect();
-    const width = buttonRef.current.offsetWidth;
-    const height = buttonRef.current.offsetHeight;
+    const width = svgRef.current.clientWidth;
+    const height = svgRef.current.clientHeight;
     const centerX = containerRect.left + width / 2;
     const centerY = containerRect.top + height / 2;
     return {
@@ -26,9 +26,9 @@ export function DraggableButton({
       centerY,
       width,
       height,
-      borderRadius: 20,
+      borderRadius: 0,
       angle: rotation,
-      shape: 'rect',
+      shape: 'star',
     };
   };
 
@@ -40,7 +40,7 @@ export function DraggableButton({
       x: e.clientX - containerRect.left,
       y: e.clientY - containerRect.top,
     };
-    if (onDragStart) onDragStart(getButtonRect());
+    if (onDragStart) onDragStart(getSvgRect());
   };
 
   const handleMouseMove = (e) => {
@@ -48,12 +48,12 @@ export function DraggableButton({
     const newX = e.clientX - offsetRef.current.x;
     const newY = e.clientY - offsetRef.current.y;
     setPosition({ x: newX, y: newY });
-    if (onDrag) onDrag(getButtonRect());
+    if (onDrag) onDrag(getSvgRect());
   };
 
   const handleMouseUp = () => {
     if (!isDragging) return;
-    if (onDragEnd) onDragEnd(getButtonRect());
+    if (onDragEnd) onDragEnd(getSvgRect());
     setIsDragging(false);
   };
 
@@ -83,17 +83,23 @@ export function DraggableButton({
         userSelect: 'none',
       }}
     >
-      <button
-        ref={buttonRef}
+      <svg
+        ref={svgRef}
+        width="100"
+        height="100"
+        viewBox="0 0 100 100"
         style={{
-          borderRadius: '20px',
-          padding: '10px 20px',
           transform: `rotate(${rotation}rad)`,
           transformOrigin: 'center center',
         }}
       >
-        Drag me
-      </button>
+        <path
+          d="M50 15 L61 39 L88 39 L66 57 L75 84 L50 68 L25 84 L34 57 L12 39 L39 39 Z"
+          fill="orange"
+          stroke="black"
+          strokeWidth="2"
+        />
+      </svg>
     </div>
   );
 }
