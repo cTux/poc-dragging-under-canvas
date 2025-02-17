@@ -1,14 +1,15 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export function DraggableSvg({
+  rotationAngle = Math.PI / 4,
   onDragStart,
   onDrag,
   onDragEnd,
   initialPosition = { x: 200, y: 200 },
 }) {
   const [position, setPosition] = useState(initialPosition);
-  // Fixed 45° rotation (in radians)
-  const [rotation] = useState(Math.PI / 4);
+  // Use the rotationAngle prop for rotation.
+  const rotation = rotationAngle;
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
   const svgRef = useRef(null);
@@ -31,6 +32,13 @@ export function DraggableSvg({
       shape: 'star',
     };
   };
+
+  // Report initial cutout data on mount.
+  useLayoutEffect(() => {
+    if (onDrag) {
+      onDrag(getSvgRect());
+    }
+  }, []);
 
   const handleMouseDown = (e) => {
     e.preventDefault();

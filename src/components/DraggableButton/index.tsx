@@ -1,20 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 export function DraggableButton({
+  rotationAngle = Math.PI / 4,
   onDragStart,
   onDrag,
   onDragEnd,
   initialPosition = { x: 100, y: 100 },
 }) {
   const [position, setPosition] = useState(initialPosition);
-  // Fixed 45° rotation (in radians)
-  const [rotation] = useState(Math.PI / 4);
+  // Use the rotationAngle prop as the rotation (in radians)
+  const rotation = rotationAngle;
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef(null);
   const buttonRef = useRef(null);
   const offsetRef = useRef({ x: 0, y: 0 });
 
-  // Return cutout data: center position, dimensions, rotation, and shape type.
+  // Returns the cutout data for the button.
   const getButtonRect = () => {
     const containerRect = containerRef.current.getBoundingClientRect();
     const width = buttonRef.current.offsetWidth;
@@ -31,6 +32,13 @@ export function DraggableButton({
       shape: 'rect',
     };
   };
+
+  // Report initial cutout data on mount
+  useLayoutEffect(() => {
+    if (onDrag) {
+      onDrag(getButtonRect());
+    }
+  }, []); // Run once after mount
 
   const handleMouseDown = (e) => {
     e.preventDefault();

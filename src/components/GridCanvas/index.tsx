@@ -29,6 +29,12 @@ export function GridCanvas({ gridSpacing = 20, cutouts = [], isDragging }) {
 
     // Clear the canvas.
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Background black
+    // ctx.beginPath();
+    // ctx.fillStyle = 'black';
+    // ctx.rect(0, 0, canvas.width, canvas.height);
+    // ctx.closePath();
+    // ctx.fill();
 
     // ─── DRAW GRID LINES (ONLY WHILE DRAGGING) ─────────────
     if (isDragging) {
@@ -71,7 +77,6 @@ export function GridCanvas({ gridSpacing = 20, cutouts = [], isDragging }) {
         if (starImage.complete) {
           ctx.drawImage(starImage, -width / 2, -height / 2, width, height);
         } else {
-          console.log('1111');
           // If not loaded yet, you might add an onload callback to redraw.
         }
       } else {
@@ -110,6 +115,7 @@ export function GridCanvas({ gridSpacing = 20, cutouts = [], isDragging }) {
         left: 0,
         pointerEvents: 'none',
         zIndex: 1000,
+        backgroundColor: 'transparent',
       }}
     />
   );
